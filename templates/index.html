@@ -12,22 +12,49 @@
 
     <script>
         const video = document.getElementById('videoPlayer');
-        const videoSrc = 'http://localhost:8000/stream';
+        const videoSrc = 'http://localhost:8000/stream';  // The stream URL
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(videoSrc);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                video.play();
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            // For Safari (which natively supports HLS)
-            video.src = videoSrc;
-            video.addEventListener('loadedmetadata', function () {
-                video.play();
-            });
+        // Function to load the HLS stream
+        function loadStream() {
+            // Reset the video element's source and load the stream
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(videoSrc);  // Load the playlist
+                hls.attachMedia(video);    // Attach the video element
+                hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                    video.play();  // Start playback when the playlist is loaded
+                });
+
+                // Listen for errors and handle recovery
+                hls.on(Hls.Events.ERROR, function (event, data) {
+                    if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                        console.log('Media error detected, attempting recovery');
+                        hls.recoverMediaError();  // Try to recover from media error
+                    } else if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+                        console.log('Network error, reloading stream...');
+                        loadStream();  // Reload the stream if there's a network error
+                    }
+                });
+
+            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                // For Safari (which natively supports HLS)
+                video.src = videoSrc;
+                video.addEventListener('loadedmetadata', function () {
+                    video.play();  // Start playback
+                });
+            }
         }
+
+        // Initial load of the stream
+        loadStream();
+
+        // Add event listener for when the video ends
+        video.addEventListener('ended', function () {
+            console.log("Video ended, reloading the stream...");
+            video.pause();  // Pause the video (optional)
+            video.src = '';  // Clear the video source to reset the player
+            loadStream();  // Reload the stream and continue playback
+        });
     </script>
 </body>
 </html>

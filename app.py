@@ -70,6 +70,11 @@ def get_live_playlist(looped_playlist_path, loop_count):
     if loop_count > 0 and num_full_loops >= loop_count:
         playlist_content.append('#EXT-X-ENDLIST\n')
 
+    # Dummy logic
+    playlist_content = []
+    for line in lines:
+        playlist_content.append(line)
+
     return Response("\n".join(playlist_content), content_type='application/vnd.apple.mpegurl')
 
 
