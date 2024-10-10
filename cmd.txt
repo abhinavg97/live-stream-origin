@@ -1,0 +1,6 @@
+ffmpeg -i /Users/ajitsharmakasturi/Desktop/hyperscale/live-stream-origin/sample.mp4 \
+  -codec: copy \
+  -hls_time 10 \
+  -hls_list_size 0 \
+  -hls_flags delete_segments \
+  -f hls /Users/ajitsharmakasturi/Desktop/hyperscale/live-stream-origin/output/index.m3u8

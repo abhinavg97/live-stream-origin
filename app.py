@@ -84,11 +84,18 @@ def stream_hls(filename):
     return send_from_directory(HLS_DIRECTORY, filename)
 
 
+# @app.route('/stream')
+# def stream_video():
+#     """Serve the dynamically updated HLS master playlist with looping."""
+#     # Set loop_count to the desired number of loops, or -1 for infinite loops
+#     return get_live_playlist(HLS_PLAYLIST, loop_count=-1)
+
 @app.route('/stream')
-def stream_video():
+def get_chunk():
     """Serve the dynamically updated HLS master playlist with looping."""
     # Set loop_count to the desired number of loops, or -1 for infinite loops
     return get_live_playlist(HLS_PLAYLIST, loop_count=-1)
+
 
 @app.route('/')
 def index():
