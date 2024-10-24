@@ -1,8 +1,9 @@
 import os
 import time
 from flask import Flask, send_from_directory, Response, render_template, request
-from flask_cors import CORS  # Import Flask-CORS
+from flask_cors import CORS  # Import Flask-COR# S
 from collections import defaultdict
+import time
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
@@ -21,6 +22,9 @@ HEADER_LINES = []
 FOOTER_LINES = []
 CHUNK_MAP = defaultdict(list)
 video_segment_cache = {}
+requests = 0
+maxrps = 0
+curr_time = time.time()
 
 
 def get_total_segments(playlist_path):
@@ -62,6 +66,17 @@ def get_live_playlist(chunk_range):
 @app.route('/stream')
 def get_chunk():
     """Serve the dynamically updated HLS master playlist with looping."""
+    global requests, curr_time, maxrps
+
+    if time.time() - curr_time < 1.0005:
+        requests += 1
+    else:
+        maxrps = max(maxrps, requests)
+        print(f"requests per seconds is {requests}, max rps is {maxrps}")
+        curr_time = time.time()
+        requests = 1
+
+
     chunkl = request.args.get('chunkl', -1)
     chunkr = request.args.get('chunkr', -1)
     # Set loop_count to the desired number of loops, or -1 for infinite loops
