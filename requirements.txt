@@ -1,3 +1,4 @@
 Flask==2.2.5
 flask_cors==5.0.0
 requests
+prometheus_client

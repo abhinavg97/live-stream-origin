@@ -1,12 +1,15 @@
 import os
 import time
-from flask import Flask, send_from_directory, Response, render_template, request
+from prometheus_client import Counter, generate_latest, Gauge
+from flask import Flask, send_from_directory, Response, render_template, request, redirect, url_for
 from flask_cors import CORS  # Import Flask-COR# S
 from collections import defaultdict
 import time
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
+# Create a counter to track requests
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests (RPS)', ['method', 'endpoint'])
 
 # Directory where HLS files are saved
 HLS_DIRECTORY = './output/'
@@ -38,6 +41,7 @@ def get_total_segments(playlist_path):
 @app.route('/<path:filename>')
 def stream_hls(filename):
     """Serve HLS playlist and segments."""
+    REQUEST_COUNT.labels(method='GET', endpoint='/chunk_file').inc()  # Increment request counter
     # prune timestamp prefix from filename
     filename = filename.split('_', 1)[1]
     return send_from_directory(HLS_DIRECTORY, filename)
@@ -66,6 +70,7 @@ def get_live_playlist(chunk_range):
 @app.route('/stream')
 def get_chunk():
     """Serve the dynamically updated HLS master playlist with looping."""
+    REQUEST_COUNT.labels(method='GET', endpoint='/stream').inc()  # Increment request counter
     global requests, curr_time, maxrps
 
     if time.time() - curr_time < 1.0005:
@@ -75,7 +80,6 @@ def get_chunk():
         print(f"requests per seconds is {requests}, max rps is {maxrps}")
         curr_time = time.time()
         requests = 1
-
 
     chunkl = request.args.get('chunkl', -1)
     chunkr = request.args.get('chunkr', -1)
@@ -97,6 +101,18 @@ def init_chunks():
         CHUNK_MAP[idx // CHUNK_LENGTH].append(line)
 
 
+@app.route('/metrics', methods=['GET'])
+def metrics():
+    # Expose Prometheus metrics
+    return Response(generate_latest(), mimetype="text/plain")
+
+
+@app.route('/')
+def home():
+    # Redirect to the /stream endpoint
+    return "Health check succeeded !"
+
+
 if __name__ == '__main__':
     init_chunks()
-    app.run(debug=True, port=8001)
+    app.run(debug=True, port=8001, threaded=True)
